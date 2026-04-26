@@ -1,0 +1,14 @@
+torch>=2.1
+numpy
+datasets>=2.16
+tokenizers>=0.15
+huggingface_hub
+lxml
+cairosvg
+mup
+tqdm
+pyyaml
+matplotlib
+scipy
+pandas
+wandb

@@ -1,0 +1,112 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath, amssymb}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage{subcaption}
+
+% Placeholder for not-yet-run experiments. Forces the reader to notice gaps.
+\newcommand{\TODO}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
+
+\title{Scaling Laws for Decoder-Only Transformers on SVG Code}
+\author{Ayush Sharma\\NYU Tandon CS-GY 6923, Spring 2026}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We empirically study scaling laws for decoder-only Transformers trained on SVG (Scalable Vector Graphics) source code. We train five model sizes from $\sim$1M to $\sim$88M parameters under both standard parameterization (SP) and Maximal Update Parameterization ($\mu$P), tune the learning rate on the smallest model, fit a power law $L = a\,N^{-\alpha} + c$ to one-epoch validation loss versus parameter count, and extrapolate to a model $10\times$ wider than our largest. We also generate and quantitatively evaluate SVG samples from the best model.
+\end{abstract}
+
+\section{Introduction}
+SVG is an XML-based, structured visual language. It has strict syntax (well-formed XML, valid attribute values), hierarchical composition (nested groups, transforms), and renders to images that can be compared visually. This makes it an interesting non-linguistic test bed for studying scaling behavior of language models: prediction quality directly translates to whether the output renders, parses, and looks like a coherent icon.
+
+We replicate, on this domain, the scaling-law methodology of Kaplan et al.\ (2020) \cite{kaplan2020}, augmented with the $\mu$P-based learning rate transfer of Yang et al.\ (2022) \cite{yang2022}. Our contributions are: (1) a clean preprocessing and tokenization pipeline for SVG; (2) a scaling-law fit on SVG data with a comparison of SP versus $\mu$P transfer; (3) extrapolation with bootstrap uncertainty; (4) sample generation and a quantitative validity/render-rate evaluation.
+
+\section{Data}
+\paragraph{Sources.} Primary: \texttt{starvector/svg-icons-simple} (HuggingFace, $\sim$89k simplified icons). Supplementary: \texttt{starvector/svg-emoji-simple}, used to expand the corpus toward the 100M-token target. Both come from the StarVector project \cite{rodriguez2023}.
+
+\paragraph{Cleaning.} Each SVG is parsed with \texttt{lxml}; failures are dropped. Comments, processing instructions, \texttt{metadata}, \texttt{title}, and \texttt{desc} subtrees are removed. Whitespace is collapsed and numeric attribute values are rounded to one decimal place to shrink the BPE vocabulary tail. SVGs shorter than 50 characters or longer than 8192 are dropped. Splits are 98/1/1 by file before token concatenation, eliminating leakage.
+
+\paragraph{Tokenization.} A byte-level BPE tokenizer (HuggingFace \texttt{tokenizers}) with vocabulary 4096 trained on the cleaned training split, with special tokens \texttt{<pad>}, \texttt{<bos>}, \texttt{<eos>}, \texttt{<unk>}. Vocabulary 4096 was chosen as a compromise between sequence length (smaller vocab = longer sequences) and embedding cost (larger vocab dominates parameter count for the Tiny model). Each cleaned SVG is wrapped \texttt{<bos>}\dots\texttt{<eos>} and packed into a single uint16 stream; training samples a contiguous \texttt{seq\_len=1024} window.
+
+\paragraph{Statistics.}
+\begin{center}\input{_auto/data_stats.tex}\end{center}
+
+Rendered examples at low/medium/high complexity are included in Appendix~\ref{app:examples}.
+
+\section{Methods}
+\subsection{Architecture}
+Decoder-only Transformer with pre-LayerNorm, GELU MLP, learned positional embeddings, causal self-attention. Five sizes are trained, varying $d_{\text{model}}$, $n_{\text{layers}}$, $n_{\text{heads}}$, and $d_{\text{ff}}$ to span roughly $10^6$ to $10^8$ parameters. Architectures and per-run statistics:
+\begin{center}\input{_auto/arch_table.tex}\end{center}
+
+\subsection{Training Setup}
+AdamW ($\beta_1=0.9$, $\beta_2=0.95$, weight decay $0.1$ on 2D weights), cosine learning-rate schedule with 200-step linear warmup decaying to $10\%$ of peak, gradient clipping at $1.0$, batch size of $65{,}536$ tokens per optimizer step, sequence length $1024$. All sizes train for exactly one epoch over the same packed training stream.
+
+\subsection{$\mu$P Parameterization}
+Following Yang et al.\ (2022), the $\mu$P version applies: (i) attention scaled by $1/d_{\text{head}}$ rather than $1/\sqrt{d_{\text{head}}}$; (ii) hidden-weight initialization $\mathcal{N}(0, 1/d_{\text{model}})$; (iii) readout (lm\_head) initialized $\mathcal{N}(0, 1/d_{\text{model}}^2)$ with output multiplier $1/d_{\text{model}}$; (iv) per-tensor learning-rate multipliers — readout and hidden weights use $\eta / (d_{\text{model}}/d_{\text{base}})$ while embeddings, norms, and biases keep $\eta$. The proxy width is $d_{\text{base}}=128$ (Tiny). We implement these rules directly in \texttt{model.py} via the \texttt{param\_groups()} helper rather than pulling in the \texttt{mup} package's dynamic re-shape; this keeps the integration explicit and auditable.
+
+\subsection{Learning-Rate Sweep}
+We sweep peak learning rate over $\{3{\times}10^{-5}, 10^{-4}, 3{\times}10^{-4}, 10^{-3}, 3{\times}10^{-3}, 10^{-2}, 3{\times}10^{-2}\}$ on the Tiny model under each parameterization, picking the LR with lowest one-epoch validation loss. The selected LR is then transferred unchanged to all larger models in the corresponding curve.
+
+\subsection{Scaling Law}
+We fit $L(N) = a\,N^{-\alpha} + c$ (SciPy \texttt{curve\_fit}, bounded). Confidence on the extrapolated loss at $N=10\,N_{\text{XL}}$ uses 2000-sample nonparametric bootstrap over the training points.
+
+\subsection{Evaluation Metrics}
+Test-set perplexity, XML validity rate (\texttt{lxml.etree} parses the generated string), SVG render rate (\texttt{cairosvg.svg2png} succeeds), and structural validity (root element is \texttt{<svg>} and a \texttt{viewBox} or width/height pair is present).
+
+\section{Results}
+\subsection{Learning-Rate Sweep on Tiny}
+\begin{minipage}[t]{0.48\textwidth}\textbf{SP sweep:}\\\input{_auto/sweep_sp.tex}\end{minipage}\hfill
+\begin{minipage}[t]{0.48\textwidth}\textbf{$\mu$P sweep:}\\\input{_auto/sweep_mup.tex}\end{minipage}
+
+\subsection{Scaling}
+Per-run results (validation loss, wall clock, throughput, GPU memory):
+\begin{center}\input{_auto/results_table.tex}\end{center}
+
+\begin{figure}[h]
+\centering
+\IfFileExists{../results/scaling.png}{\includegraphics[width=0.85\textwidth]{../results/scaling.png}}{\TODO{run \texttt{src.scaling\_fit} to populate scaling.png}}
+\caption{Validation loss vs.\ parameter count after 1 epoch of training. Power-law fits $L=aN^{-\alpha}+c$ are overlaid for SP and $\mu$P. Vertical lines mark the $10\times$ extrapolation point.}
+\end{figure}
+
+\paragraph{Power-law fit and extrapolation.}
+\input{_auto/scaling_summary.tex}
+
+\subsection{Best Model: Generation and Evaluation}
+The best model (XL under $\mu$P) is trained for additional epochs, then samples are drawn at temperatures $\{0.5, 0.8, 1.0\}$ with nucleus $p{=}0.95$, both unconditional and prefix-conditioned. A grid of rendered samples is in Appendix~\ref{app:samples}.
+
+\begin{center}\input{_auto/eval_table.tex}\end{center}
+
+\section{Discussion}
+\paragraph{Scaling exponent.} Kaplan et al.\ report $\alpha \approx 0.076$ for natural-language LM loss vs.\ non-embedding parameter count. Our SVG fit \TODO{report $\alpha_{\text{SP}}$ and $\alpha_{\mu P}$ and compare} suggests \TODO{interpret: SVG's restricted syntax and short documents may favor a steeper or shallower exponent}. Hoffmann et al.\ \cite{hoffmann2022} emphasize that compute-optimal training requires scaling tokens with parameters; our 1-epoch protocol holds tokens fixed at $\sim$100M, so our exponents reflect data-bottlenecked scaling and should not be read as compute-optimal.
+
+\paragraph{Fixed LR vs.\ $\mu$P.} \TODO{describe at which size the SP curve diverges from the $\mu$P curve, and whether the optimal Tiny LR transferred well across widths under $\mu$P. Expected: SP loss flattens or rises for the largest models because the tuned-on-Tiny LR is too large at width 768; $\mu$P's per-tensor scaling counteracts this.}
+
+\paragraph{What models learn at scale.} \TODO{qualitative observations: at Tiny, well-formed prefixes degenerate quickly into repeated tokens; at Medium, syntax is clean but geometry is incoherent; at XL, samples show plausible viewBox usage, closed paths, and recognizable iconography.}
+
+\paragraph{Limitations.} (1) Single epoch over $\sim$100M tokens — at XL this is undertrained and the loss is far from the irreducible term; (2) we treat parameter count as the scale variable rather than compute, so our curves are not directly Chinchilla-comparable; (3) icons-simple is short and templated, so character-level diversity is low.
+
+\section{Conclusion}
+We built an end-to-end pipeline for studying transformer scaling on SVG code, fit a power law to one-epoch loss, and quantified the benefit of $\mu$P learning-rate transfer. \TODO{one-sentence summary of the headline number once runs finish.}
+
+\bibliographystyle{plain}
+\begin{thebibliography}{9}
+\bibitem{kaplan2020} J.\ Kaplan et al.\ \emph{Scaling Laws for Neural Language Models}, arXiv:2001.08361, 2020.
+\bibitem{hoffmann2022} J.\ Hoffmann et al.\ \emph{Training Compute-Optimal Large Language Models} (Chinchilla), arXiv:2203.15556, 2022.
+\bibitem{yang2022} G.\ Yang et al.\ \emph{Tensor Programs V: Tuning Large Neural Networks via Zero-Shot Hyperparameter Transfer}, arXiv:2203.09789, 2022.
+\bibitem{rodriguez2023} J.\ A.\ Rodriguez et al.\ \emph{StarVector: Generating Scalable Vector Graphics Code from Images and Text}, arXiv:2312.11556, 2023.
+\end{thebibliography}
+
+\appendix
+\section{Rendered SVG examples}\label{app:examples}
+\TODO{drop a few rendered PNGs from \texttt{data/raw} at varying complexity levels here.}
+
+\section{Generated samples}\label{app:samples}
+\TODO{include a 4$\times$4 grid from \texttt{results/samples/png/}.}
+
+\end{document}

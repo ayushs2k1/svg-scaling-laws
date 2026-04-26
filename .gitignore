@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+data/raw/
+data/bin/
+data/tok/
+results/
+report/_auto/
+report/*.pdf
+report/*.aux
+report/*.log
+report/*.fls
+report/*.fdb_latexmk
+.DS_Store
+*.npy
+*.pt
