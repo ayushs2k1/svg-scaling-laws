@@ -44,7 +44,14 @@ fi
 # ── 1. Load anaconda ──────────────────────────────────────────────────────────
 if command -v module &>/dev/null; then
     module purge
-    module load anaconda3/2024.02
+    # Auto-detect the available conda/anaconda module
+    CONDA_MOD=$(module -t avail 2>&1 | grep -iE "^(anaconda|miniconda|miniforge|conda)[0-9/]" | sort -V | tail -1)
+    if [[ -z "${CONDA_MOD}" ]]; then
+        echo "[warn] No anaconda/conda module found — trying conda already on PATH"
+    else
+        echo "[module] Loading ${CONDA_MOD}"
+        module load "${CONDA_MOD}"
+    fi
 else
     echo "[warn] 'module' not found — using conda already on PATH"
 fi
