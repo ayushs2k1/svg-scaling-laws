@@ -57,6 +57,11 @@ def main():
         if split == "train":
             seq_lens_all = seq_lens
 
+    _MIN_TRAIN_TOKENS = 100_000_000
+    if "train" in counts and counts["train"]["n_tokens"] < _MIN_TRAIN_TOKENS:
+        print(f"[pack] WARNING: train set has only {counts['train']['n_tokens']:,} tokens "
+              f"(target >= 100M). Add more datasets in prepare.py to meet the requirement.")
+
     meta = dict(vocab_size=vocab_size, bos=bos, eos=eos, seq_len=args.seq_len, **counts)
     if seq_lens_all:
         arr = np.array(seq_lens_all)

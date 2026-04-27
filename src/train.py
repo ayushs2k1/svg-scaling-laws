@@ -105,6 +105,13 @@ def main():
     n_params_nonemb = model.num_params(non_embedding=True)
     print(f"[train] params: {n_params:,} (non-emb: {n_params_nonemb:,})")
 
+    if device == "cuda" and hasattr(torch, "compile"):
+        try:
+            model = torch.compile(model)
+            print("[train] torch.compile enabled")
+        except Exception as e:
+            print(f"[train] torch.compile skipped: {e}")
+
     micro_batch = cfg_dict["micro_batch"]
     seq_len = cfg_dict["seq_len"]
     batch_tokens = cfg_dict["batch_tokens"]

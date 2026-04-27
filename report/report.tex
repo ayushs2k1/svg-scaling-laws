@@ -77,6 +77,9 @@ Per-run results (validation loss, wall clock, throughput, GPU memory):
 \paragraph{Power-law fit and extrapolation.}
 \input{_auto/scaling_summary.tex}
 
+\subsection{Training Loss Curves}
+\input{_auto/training_curves.tex}
+
 \subsection{Best Model: Generation and Evaluation}
 The best model (XL under $\mu$P) is trained for additional epochs, then samples are drawn at temperatures $\{0.5, 0.8, 1.0\}$ with nucleus $p{=}0.95$, both unconditional and prefix-conditioned. A grid of rendered samples is in Appendix~\ref{app:samples}.
 

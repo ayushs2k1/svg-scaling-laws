@@ -135,9 +135,29 @@ def evald():
     write("eval_table.tex", body)
 
 
+def training_curves():
+    """Emit a LaTeX figure block pointing at the training curve PNGs."""
+    sp_png = ROOT / "results" / "sp_training_curves.png"
+    mup_png = ROOT / "results" / "mup_training_curves.png"
+
+    def fig_line(rel_path, caption):
+        if (ROOT / rel_path).exists():
+            return (f"\\includegraphics[width=0.95\\textwidth]{{{rel_path}}}\n"
+                    f"\\captionof{{figure}}{{{caption}}}\n")
+        return f"\\TODO{{{rel_path} not yet generated — run plot\\_curves}}\n"
+
+    body = (fig_line("../results/sp_training_curves.png",
+                     "Training and validation loss curves for all SP model sizes.")
+            + "\n"
+            + fig_line("../results/mup_training_curves.png",
+                       "Training and validation loss curves for all \\textmu P model sizes."))
+    write("training_curves.tex", body)
+
+
 if __name__ == "__main__":
     data_stats()
     arch_and_results()
     sweeps()
     scaling()
     evald()
+    training_curves()
