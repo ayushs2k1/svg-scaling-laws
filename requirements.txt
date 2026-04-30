@@ -10,3 +10,4 @@ tqdm
 matplotlib
 seaborn
 scipy
+Pillow
