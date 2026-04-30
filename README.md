@@ -1,80 +1,49 @@
 # Scaling Laws for SVG Language Models
 
-CS-GY 6923 optional project (Spring 2026). Trains decoder-only Transformers at multiple
-scales on SVG code, fits power-law scaling curves, compares standard parameterization
-(SP) vs. Maximal Update Parameterization (µP), and generates SVG samples.
+CS-GY 6923 optional project (Spring 2026, NYU Tandon).  Trains decoder-only
+Transformers at five parameter scales on SVG (Scalable Vector Graphics) code,
+derives power-law scaling exponents, compares standard parameterisation (SP)
+with Maximal Update Parameterisation (µP), and generates/evaluates SVG samples.
 
-## Layout
+## Repository layout
 
 ```
-configs/         per-model architecture YAMLs (tiny/small/medium/large/xl)
-src/
-  data/prepare.py        download + clean + split SVG datasets
-  tokenizer/train_bpe.py train a BPE tokenizer with HF tokenizers
-  data/pack.py           tokenize + pack into binary shards
-  model.py               nanoGPT-style decoder Transformer (SP and µP)
-  train.py               single-run trainer (cosine + warmup, AdamW)
-  sweep.py               LR sweep driver (Tiny model, SP and µP)
-  scaling_fit.py         power-law fit + bootstrap CI + extrapolation
-  generate.py            sampling (temperature / top-k / top-p / prefix)
-  eval.py                perplexity + XML validity + render rate
-scripts/         end-to-end shell pipelines
-report/          LaTeX report template that pulls from results JSON
-results/         (created at runtime) per-run JSON, plots, samples
+notebooks/svg_scaling_laws.ipynb   # single self-contained notebook (all five parts)
+requirements.txt                   # Python package dependencies
 ```
 
-## Quickstart
+## Quickstart (Google Colab)
 
-```bash
-pip install -r requirements.txt
+Open `notebooks/svg_scaling_laws.ipynb` in Colab, set runtime to **GPU**,
+then run cells top-to-bottom.  Each training cell is resumable: if a
+`_final.pt` checkpoint already exists in the Drive folder it loads that
+instead of re-training.
 
-# 1. Data
-python -m src.data.prepare --out data/raw --max-tokens 1024
-python -m src.tokenizer.train_bpe --in data/raw --out data/tok --vocab-size 4096
-python -m src.data.pack --in data/raw --tok data/tok --out data/bin --seq-len 1024
+> All heavy training is done inside the notebook.  No separate Python
+> modules or shell pipelines are needed.
 
-# 2. LR sweep on Tiny (SP)
-bash scripts/run_lr_sweep.sh tiny sp
+## Key design decisions
 
-# 3. Train all sizes (SP) at best LR
-bash scripts/run_part2.sh <best_lr_sp>
+| Choice | Rationale |
+|--------|-----------|
+| BPE vocab 4 096 | Small enough for tiny models; large enough to capture SVG keywords |
+| Context length 512 | Covers ~95% of cleaned SVGs; keeps memory manageable for XL |
+| Weight tying (SP only) | Standard LM practice; disabled under µP (incompatible with MuReadout) |
+| Cosine LR + warmup 200 | Empirically stable across all model sizes |
+| 98/1/1 split | Split by file, not position, to prevent token-level leakage |
 
-# 4. LR sweep on Tiny (µP), then transfer
-bash scripts/run_lr_sweep.sh tiny mup
-bash scripts/run_part3.sh <best_lr_mup>
+## What is from nanoGPT vs. original
 
-# 5. Power-law fits + extrapolation
-python -m src.scaling_fit --runs results/runs --out results/scaling.json
+The causal self-attention block, pre-LayerNorm residual structure, and weight
+initialisation scheme follow nanoGPT (Karpathy, 2022).  Everything else —
+µP integration, SVG preprocessing, BPE tokenisation pipeline, binary packing,
+scaling-law fitting, generation, and evaluation — is written from scratch for
+this project.
 
-# 6. Best model: train longer + generate + eval
-python -m src.train --config configs/xl.yaml --mup --lr <best_lr_mup> --epochs 3 --tag best
-python -m src.generate --ckpt results/runs/best/ckpt.pt --n-uncond 20 --n-prefix 10
-python -m src.eval --ckpt results/runs/best/ckpt.pt --samples results/samples
+## References
 
-# 7. Build report
-cd report && latexmk -pdf report.tex
-```
-
-## Compute notes
-
-- Designed for a single A100/V100 (Colab Pro / NYU Greene). Largest model (XL ~88M)
-  fits comfortably in 40GB at seq_len=1024, batch=64.
-- Each scaling-plot run is exactly 1 epoch over the train shard (~100M tokens). On A100
-  this is roughly: Tiny 5min, Small 10min, Medium 20min, Large 45min, XL 90min.
-- Total compute budget for full project (Parts 2+3+4): ~10–15 A100-hours.
-
-## What is from nanoGPT vs. ours
-
-- `model.py`: structure is nanoGPT-style (causal self-attention block, MLP,
-  pre-LayerNorm). µP adaptations (1/d attention, output-layer scaling, init scaling,
-  per-param-group LR multipliers via `mup`) are ours.
-- `train.py`: AdamW + cosine + warmup loop is conventional; throughput, memory,
-  per-run JSON logging, sweep integration are ours.
-- All preprocessing, tokenization, scaling-law fitting, evaluation, and generation
-  scripts are ours.
-
-## Honesty
-
-All numbers in the report come from actual runs. `report/report.tex` reads JSON
-artifacts under `results/`; if a run hasn't happened, the corresponding figure/table
-shows `TODO` rather than a fabricated value.
+- Kaplan et al. (2020) — *Scaling Laws for Neural Language Models*
+- Hoffmann et al. (2022) — *Training Compute-Optimal Large Language Models*
+- Yang et al. (2022) — *Tensor Programs V: Zero-Shot Hyperparameter Transfer* (µP)
+- Rodriguez et al. (2023) — *StarVector: Generating SVG Code from Images and Text*
+- Karpathy (2022) — [nanoGPT](https://github.com/karpathy/nanoGPT)
