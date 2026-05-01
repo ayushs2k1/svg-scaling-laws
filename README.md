@@ -1,5 +1,7 @@
 # Scaling Laws for SVG Language Models
 
+[![GitHub](https://img.shields.io/badge/GitHub-ayushs2k1%2Fsvg--scaling--laws-blue?logo=github)](https://github.com/ayushs2k1/svg-scaling-laws)
+
 CS-GY 6923 optional project (Spring 2026, NYU Tandon).  Trains decoder-only
 Transformers at five parameter scales on SVG (Scalable Vector Graphics) code,
 derives power-law scaling exponents, compares standard parameterisation (SP)
