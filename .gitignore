@@ -6,7 +6,12 @@ data/bin/
 data/tok/
 results/
 report/_auto/
-report/*.pdf
+report/*.aux
+report/*.log
+report/*.fls
+report/*.fdb_latexmk
+report/*.out
+report/*.synctex.gz
 report/*.aux
 report/*.log
 report/*.fls

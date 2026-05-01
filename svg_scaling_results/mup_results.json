@@ -1,0 +1,42 @@
+{
+  "tiny": {
+    "run_name": "mup_tiny",
+    "n_params": 1901696,
+    "best_val": 0.5691377627849579,
+    "gpu_mb_peak": 7591.979008,
+    "elapsed_s": 230.20845341682434,
+    "final_val_loss": 0.5504597443342208
+  },
+  "small": {
+    "run_name": "mup_small",
+    "n_params": 4327872,
+    "best_val": 0.5273942828178406,
+    "gpu_mb_peak": 7591.979008,
+    "elapsed_s": 438.14340257644653,
+    "final_val_loss": 0.5101578870415687
+  },
+  "medium": {
+    "run_name": "mup_medium",
+    "n_params": 13964160,
+    "best_val": 0.5198412090539932,
+    "gpu_mb_peak": 7591.979008,
+    "elapsed_s": 522.5072388648987,
+    "final_val_loss": 0.5032356828451157
+  },
+  "large": {
+    "run_name": "mup_large",
+    "n_params": 35924480,
+    "best_val": 0.4960975217819214,
+    "gpu_mb_peak": 8434.226688,
+    "elapsed_s": 1122.2653942108154,
+    "final_val_loss": 0.4795672309398651
+  },
+  "xl": {
+    "run_name": "mup_xl",
+    "n_params": 91638528,
+    "best_val": 0.5099340540170669,
+    "gpu_mb_peak": 14901.556736,
+    "elapsed_s": 2113.889792442322,
+    "final_val_loss": 0.490025005042553
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "tiny": {
+    "run_name": "sp_tiny",
+    "n_params": 1377408,
+    "best_val": 0.60599001288414,
+    "gpu_mb_peak": 1158.584832,
+    "elapsed_s": 126.17570972442627,
+    "final_val_loss": 0.5913532516360283
+  },
+  "small": {
+    "run_name": "sp_small",
+    "n_params": 3541440,
+    "best_val": 0.5143872863054275,
+    "gpu_mb_peak": 1574.969344,
+    "elapsed_s": 170.367821931839,
+    "final_val_loss": 0.49732563734054563
+  },
+  "medium": {
+    "run_name": "sp_medium",
+    "n_params": 12391296,
+    "best_val": 0.5245549404621124,
+    "gpu_mb_peak": 2400.415232,
+    "elapsed_s": 221.0097267627716,
+    "final_val_loss": 0.5076269808411599
+  },
+  "large": {
+    "run_name": "sp_large",
+    "n_params": 33827328,
+    "best_val": 1.0257879829406737,
+    "gpu_mb_peak": 4382.57152,
+    "elapsed_s": 470.2717571258545,
+    "final_val_loss": 1.7381662547588348
+  },
+  "xl": {
+    "run_name": "sp_xl",
+    "n_params": 88492800,
+    "best_val": 1.08375048995018,
+    "gpu_mb_peak": 7591.979008,
+    "elapsed_s": 927.4106600284576,
+    "final_val_loss": 2.3875184655189514
+  }
+}
