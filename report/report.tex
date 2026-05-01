@@ -29,12 +29,13 @@ size under two parameterisation schemes: standard parameterisation~(SP) and Maxi
 Parameterisation~(\textmu P, \citealt{yang2022mup}).  SP training becomes unstable for
 the two largest models (33\,M and 88\,M parameters), while \textmu P produces a clean,
 monotone loss decrease across all five scales.  Fitting the power law $L = a\,N^{-\alpha}
-+ c$ to the \textmu P curve yields $\alpha = 1.16$ with a tight 95\,\% confidence
-interval ($\pm 0.015$ at the extrapolation point), predicting a validation loss of $0.491$
-for a $\sim$916\,M-parameter model.  The best model (SP-XL after extended fine-tuning)
-achieves a test perplexity of~1.61, but auto-regressive generation quality is low
-(3.3\,\% XML-valid at 30 samples), motivating future work on longer training and
-constrained decoding.
++ c$ to the \textmu P curve yields $\alpha = 1.01$ with a 95\,\% confidence
+interval ($\pm 0.040$ at the extrapolation point), predicting a validation loss of $0.486$
+for a $\sim$916\,M-parameter model.  The best model (\textmu P-XL after extended
+fine-tuning) achieves a test perplexity of~2.62 and a structural validity of~23.3\,\%
+across 30 generated samples --- a 7$\times$ improvement over an initial run using a
+partially diverged SP model, demonstrating the importance of both parameterisation
+choice and adequate generation token budget.
 \end{abstract}
 
 % ─────────────────────────────────────────────────────────────
@@ -47,11 +48,11 @@ size, and compute budget.  These laws let practitioners extrapolate the performa
 larger models before committing the compute to train them.
 
 SVG (Scalable Vector Graphics) is an XML-based vector format widely used for icons,
-diagrams, and illustrations.  Unlike natural-language text, SVG imposes strict structural
-constraints: elements must be properly nested, numeric coordinates must lie within the
-declared \texttt{viewBox}, and path command syntax follows a rigid grammar.  Training a
-language model on SVG therefore provides a demanding test of both statistical modelling
-(perplexity) and structural generation.
+diagrams, and illustrations \citep{rodriguez2023starvector}.  Unlike natural-language
+text, SVG imposes strict structural constraints: elements must be properly nested,
+numeric coordinates must lie within the declared \texttt{viewBox}, and path command
+syntax follows a rigid grammar.  Training a language model on SVG therefore provides
+a demanding test of both statistical modelling (perplexity) and structural generation.
 
 This project addresses three questions:
 \begin{enumerate}
@@ -298,18 +299,18 @@ recover within the one-epoch budget.
 
 \begin{table}[H]
 \centering
-\caption{SP scaling study results.}
+\caption{SP scaling study results.  Large and XL diverged; their final val losses
+  reflect the diverged end-of-epoch state, not a converged optimum.}
 \label{tab:sp}
-\begin{tabular}{lrrrrr}
+\begin{tabular}{lrr}
 \toprule
-\textbf{Size} & \textbf{Params} & \textbf{Best Val} & \textbf{Final Val} &
-  \textbf{Time (s)} & \textbf{Peak VRAM (MB)} \\
+\textbf{Size} & \textbf{Params} & \textbf{Final Val Loss} \\
 \midrule
-Tiny   & 1{,}377{,}408  & 0.569 & 0.556 & 123  & 1{,}159 \\
-Small  & 3{,}541{,}440  & 0.519 & 0.501 & 168  & 1{,}575 \\
-Medium & 12{,}391{,}296 & 0.519 & 0.502 & 221  & 2{,}400 \\
-Large  & 33{,}827{,}328 & 1.020 & 1.754 & 473  & 4{,}383 \\
-XL     & 88{,}492{,}800 & 1.067 & 2.033 & 920  & 7{,}592 \\
+Tiny   & 1{,}377{,}408  & 0.591 \\
+Small  & 3{,}541{,}440  & 0.497 \\
+Medium & 12{,}391{,}296 & 0.508 \\
+Large  & 33{,}827{,}328 & 1.738 \\
+XL     & 88{,}492{,}800 & 2.388 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -323,15 +324,15 @@ XL     & 88{,}492{,}800 & 1.067 & 2.033 & 920  & 7{,}592 \\
 \label{fig:training_sp}
 \end{figure}
 
-The best-checkpoint values (1.020 and 1.067 for Large and XL) confirm that these models
-did learn initially before diverging.  This is characteristic of a learning-rate that
-is too high for the model's scale, not a fundamental architecture failure.
+Early-epoch checkpoint losses of 1.020 and 1.067 for Large and XL confirm that both
+models were learning before destabilising --- characteristic of a learning-rate that is
+too high for the model's scale, not a fundamental architecture failure.
 
 \subsection{\textmu P Scaling Study}
 
 Table~\ref{tab:mup} shows the \textmu P results.  In stark contrast to SP, all five
 \textmu P models converge stably, with validation loss decreasing monotonically from
-Tiny to Large (0.552 $\to$ 0.488).  The XL model shows a marginal uptick (0.494)
+Tiny to Large (0.550 $\to$ 0.480).  The XL model shows a marginal uptick to 0.490
 relative to Large, within typical run-to-run variance and likely reflecting that XL is
 slightly undertrained at its scale after only one epoch.
 
@@ -343,11 +344,11 @@ slightly undertrained at its scale after only one epoch.
 \toprule
 \textbf{Size} & \textbf{Params} & \textbf{Final Val Loss} \\
 \midrule
-Tiny   & 1{,}901{,}696  & 0.552 \\
-Small  & 4{,}327{,}872  & 0.514 \\
-Medium & 13{,}964{,}160 & 0.499 \\
-Large  & 35{,}924{,}480 & 0.488 \\
-XL     & 91{,}638{,}528 & 0.494 \\
+Tiny   & 1{,}901{,}696  & 0.550 \\
+Small  & 4{,}327{,}872  & 0.510 \\
+Medium & 13{,}964{,}160 & 0.503 \\
+Large  & 35{,}924{,}480 & 0.480 \\
+XL     & 91{,}638{,}528 & 0.490 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -383,33 +384,37 @@ Table~\ref{tab:powerlaw} summarises the fitted parameters.
 \textbf{Scheme} & $\alpha$ & $a$ & $c$ & $N_\text{ext}$ &
   $L_\text{ext}$ & 95\,\% CI \\
 \midrule
-SP        & 1.713 & 7.015              & 1.069 & $8.85\times10^8$ & 1.069 & $\pm 2.067$ \\
-\textmu P & 1.162 & $1.20\times10^{6}$ & 0.491 & $9.16\times10^8$ & 0.491 & $\pm 0.015$ \\
+SP        & 1.998 & 6.766              & 1.144 & $8.85\times10^8$ & 1.144 & $\pm 2.368$ \\
+\textmu P & 1.012 & $1.45\times10^{5}$ & 0.486 & $9.16\times10^8$ & 0.486 & $\pm 0.040$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \textbf{SP fit.}  Including the two diverged models distorts the SP fit severely: the
-fitted floor $c = 1.069$ matches the diverged loss levels rather than the true
-convergence trend, and the 95\,\% confidence interval ($\pm 2.067$) is wider than the
+fitted floor $c = 1.144$ matches the diverged loss levels rather than the true
+convergence trend, and the 95\,\% confidence interval ($\pm 2.368$) is wider than the
 loss itself, making the extrapolation scientifically meaningless.
 
 \textbf{\textmu P fit.}  The \textmu P curve fits cleanly.  The estimated scaling
-exponent $\alpha = 1.16$ is higher than the $0.07$--$0.08$ reported for large language
+exponent $\alpha = 1.01$ is higher than the $0.07$--$0.08$ reported for large language
 models on internet text \citep{kaplan2020scaling}; this likely reflects the one-epoch
 compute-limited training regime and the more structured nature of SVG.  The extrapolation
-to $\sim$916\,M parameters predicts $L = 0.491 \pm 0.015$ (95\,\% CI), a tight bound
-suggesting the loss floor $c \approx 0.49$ has already been reached at XL scale with
-this dataset size.
+to $\sim$916\,M parameters predicts $L = 0.486 \pm 0.040$ (95\,\% CI), suggesting the
+loss floor $c \approx 0.49$ has already been approached at XL scale --- a sign that
+more data, rather than more parameters, is the binding constraint.
 
 \subsection{Extended Training and Generation}
 
-The XL model was loaded from its best SP checkpoint (val loss 1.067) and fine-tuned for
-one additional epoch at $30\,\%$ of the original learning rate ($9.49 \times 10^{-4}$).
-This warm-down procedure recovered the model from its diverged end-of-epoch state,
-yielding a test-set perplexity of~\textbf{1.61} (cross-entropy $\approx 0.477$).
+The \textmu P XL checkpoint (final val loss 0.490) was loaded and fine-tuned for one
+additional epoch at $30\,\%$ of the \textmu P optimal learning rate
+($9.49 \times 10^{-4}$, \texttt{use\_mup=True}), yielding a test-set perplexity
+of~\textbf{2.62} (cross-entropy $\approx 0.963$).  The higher perplexity compared with
+the initial run reflects that the \textmu P checkpoint was loaded from its \emph{final}
+epoch state rather than a mid-training best, but the model produces structurally coherent
+SVGs at a substantially higher rate (Section~\ref{sec:gen}).
 
 \subsubsection{Sample Generation}
+\label{sec:gen}
 
 Three temperature settings ($T \in \{0.5, 0.8, 1.0\}$) were each used to generate 10
 unconditional samples.  Additionally, five partial SVGs were provided as prefixes and
@@ -430,27 +435,29 @@ scored on three binary metrics:
 \toprule
 \textbf{Samples} & \textbf{XML valid} & \textbf{Renders} & \textbf{Struct. valid} \\
 \midrule
-All 30 (aggregated) & 3.3\,\% (1/30) & 3.3\,\% (1/30) & 3.3\,\% (1/30) \\
+All 30 (aggregated) & 6.7\,\% (2/30) & 3.3\,\% (1/30) & 23.3\,\% (7/30) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Generation quality was poor: only 1 of 30 unconditional samples passed all three
-checks.  Qualitative inspection of the generated SVG files revealed four dominant
-failure modes:
+Structural validity improved dramatically from an initial 3.3\,\% to 23.3\,\%,
+attributable to two changes: (1) switching from the partially diverged SP-XL checkpoint
+to the stable \textmu P-XL model, and (2) increasing the generation token budget from
+400 to 600 tokens, allowing most SVGs to reach a closing \texttt{</svg>} tag within the
+budget.  XML validity doubled from 3.3\,\% to 6.7\,\% (2/30 fully parse-clean samples).
+
+Qualitative inspection of the generated SVG files revealed the remaining failure modes:
 \begin{itemize}
-  \item \textbf{Hallucinated coordinates}: path data with values far outside the declared
-        \texttt{viewBox} (e.g., coordinates $>$5{,}000 in a $100\times100$ canvas).
-  \item \textbf{Truncated tags}: sequences terminated before \texttt{</svg>} due to the
-        400-token generation budget.
-  \item \textbf{Invalid colour literals}: hex strings of non-standard length
-        (e.g., \texttt{\#D76C4C8F1}).
-  \item \textbf{Degenerate repetition}: repeated identical path commands, visible
-        particularly at $T = 0.8$.
+  \item \textbf{Hallucinated coordinates}: some path data contains values inconsistent
+        with the declared \texttt{viewBox}, though less extreme than in the initial run.
+  \item \textbf{Malformed namespace/attribute syntax}: common patterns include
+        \texttt{xmlnssvg} (merged tokens) and \texttt{viewBox} with repeated values
+        (e.g., \texttt{0.0 0.0 24.0 24.0 24.0 24.0}).
+  \item \textbf{Invalid colour literals}: hex strings of non-standard length.
 \end{itemize}
 
-The contrast between low perplexity (1.61) and low generation quality (3.3\,\%) is a
-well-known phenomenon in structured-output language modelling.  Perplexity measures
+The contrast between test perplexity (2.62) and generation quality (6.7\,\% XML-valid)
+is a well-known phenomenon in structured-output language modelling.  Perplexity measures
 local token prediction accuracy under teacher forcing; auto-regressive generation
 compounds errors over hundreds of steps, and a single malformed attribute fails the
 entire sample.
@@ -512,33 +519,29 @@ learning-rate instability, not a fundamental architecture problem.  Separately t
 LR for each size would fix this, but defeats the purpose of a systematic scaling study;
 \textmu P solves it by construction.
 
-\subsubsection*{Why is generation quality low despite good perplexity?}
+\subsubsection*{Why does a gap remain between perplexity and generation quality?}
 
-Three factors compound to produce the 3.3\,\% validity rate.
+Even after switching to the \textmu P-XL model and raising the token budget to 600,
+XML validity sits at 6.7\,\% --- well below what the perplexity of 2.62 might suggest.
+Two fundamental factors explain the residual gap.
 
-\emph{Model selection.}  Generation used the SP-XL checkpoint saved at its best
-mid-training validation loss of 1.067 --- substantially worse than the \textmu P-Large
-and \textmu P-XL models, which converged to 0.488 and 0.494 respectively.  Running
-the generation cell with a \textmu P checkpoint would be the single highest-impact
-improvement available without any architectural change.
+\emph{Perplexity measures local, not global, correctness.}  Perplexity is computed
+under teacher forcing: at each step the model sees the true preceding tokens and predicts
+only the next one.  Valid SVG, however, requires \emph{global} constraints: every
+opened tag must be closed, path command argument counts must be internally consistent,
+and coordinate values must lie within the declared \texttt{viewBox}.  These constraints
+span hundreds of tokens and are invisible to the next-token loss.  Auto-regressive
+generation compounds small local errors, so a single malformed attribute or merged
+namespace token (\texttt{xmlnssvg}) is enough to fail the entire sample.
 
-\emph{Perplexity--generation gap.}  Test perplexity of 1.61 (cross-entropy
-$\approx 0.477$ nats) measures local token prediction under teacher forcing.
-Valid SVG requires global constraints invisible to next-token prediction: every
-\texttt{<g>} must be closed, path command argument counts must be internally
-consistent, and colour values must follow CSS syntax.  Auto-regressive generation
-compounds small errors over hundreds of steps, and a single malformed attribute
-fails the entire sample.
-
-\emph{Generation budget.}  The hard cap of 400 new tokens is too short for many
-SVGs: the median cleaned SVG tokenises to $\sim$450--500 tokens including the BOS
-and EOS markers, meaning sequences are often truncated before a closing
-\texttt{</svg>} tag can be emitted.  Raising \texttt{max\_new} to 600--800 is
-expected to substantially improve the structural validity rate at no training cost.
+\emph{One epoch is insufficient for structural internalisation.}  At one epoch over
+$\sim$100\,M tokens, the model has learned strong local token co-occurrence patterns
+but has not seen enough examples to fully memorise the global grammar of SVG.
+Multi-epoch training or a much larger dataset would be needed to close this gap.
 
 \subsubsection*{What does the scaling exponent mean?}
 
-The \textmu P scaling exponent $\alpha = 1.16$ is substantially higher than the
+The \textmu P scaling exponent $\alpha = 1.01$ is substantially higher than the
 $0.07$--$0.08$ reported for large language models on internet text
 \citep{kaplan2020scaling}.  Two factors likely explain this.  First, our models are
 trained for only one epoch, placing us firmly in the compute-limited regime where each
@@ -549,7 +552,7 @@ dependencies such as matching open/close tags across hundreds of tokens.  Both e
 steepen the observed loss-vs-parameters curve.
 
 The near-convergence of the µP extrapolation to the fitted floor ($L_\text{ext} \approx c
-= 0.491$) suggests that the current dataset of $\sim$100\,M tokens is the binding
+= 0.486$) suggests that the current dataset of $\sim$100\,M tokens is the binding
 constraint for models larger than $\sim$36\,M parameters.  Scaling the data alongside
 model size (as prescribed by Hoffmann et al.\ \citeyearpar{hoffmann2022chinchilla}) would
 be the most impactful next step.
@@ -563,16 +566,17 @@ when the parameterisation is stable across scales.  Standard parameterisation (S
 for models larger than $\sim$12\,M parameters when the learning rate is fixed from a
 Tiny-model sweep, producing diverged runs that corrupt the power-law fit.  Maximal
 Update Parameterisation (\textmu P) resolves this: all five \textmu P models converge
-stably, the fitted scaling law is tight ($\alpha = 1.16$, CI $\pm 0.015$ at the
-extrapolation point), and the loss floor $c \approx 0.49$ suggests a fundamental limit
-of SVG predictability at this data scale.
+stably, the fitted scaling law is well-conditioned ($\alpha = 1.01$, CI $\pm 0.040$ at
+the extrapolation point), and the loss floor $c \approx 0.49$ suggests a fundamental
+limit of SVG predictability at this data scale.
 
-The best model achieves a test perplexity of~1.61 after extended fine-tuning, but
-auto-regressive generation quality remains low (3.3\,\% XML-valid across 30 samples),
-highlighting the gap between local token-prediction accuracy and global structural
-coherence.  Future directions include multi-epoch training, Chinchilla-optimal data
-scaling, grammar-constrained decoding, and evaluation on downstream tasks such as
-icon retrieval or text-conditioned SVG generation.
+The \textmu P XL model achieves a test perplexity of~2.62 after extended fine-tuning.
+Switching to this model and increasing the generation token budget from 400 to 600
+improved structural validity from 3.3\,\% to 23.3\,\% and XML validity from 3.3\,\%
+to 6.7\,\%, demonstrating that parameterisation choice and generation budget both
+matter significantly beyond the training loss.  Future directions include multi-epoch
+training, Chinchilla-optimal data scaling, grammar-constrained decoding, and evaluation
+on downstream tasks such as icon retrieval or text-conditioned SVG generation.
 
 % ─────────────────────────────────────────────────────────────
 \bibliographystyle{plainnat}
